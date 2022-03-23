@@ -1,0 +1,5 @@
+flask==1.1.4
+gunicorn==20.0.4
+markupsafe==2.0.1
+discord
+requests

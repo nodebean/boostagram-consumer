@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boostagram-consumer
+  labels:
+    app: boostagram-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: boostagram-consumer
+  template:
+    metadata:
+      labels:
+        app: boostagram-consumer
+    spec:
+      containers:
+        - name: boostagram-consumer
+          image: localhost:32000/boostagram-consumer:latest
+          env:
+            - name: WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: webhook-url
+                  key: WEBHOOK_URL
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-key
+                  key: APP_KEY              
+          ports:
+            - containerPort: 5000
+        - name: nginx
+          image: nginx:stable-alpine
+          volumeMounts:
+            - mountPath: /etc/nginx
+              name: boostagram-consumer-nginx-conf
+      volumes:
+        - name: boostagram-consumer-nginx-conf
+          configMap:
+            defaultMode: 444
+            name: boostagram-consumer-nginx-conf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boostagram-consumer
+  labels:
+    app: boostagram-consumer
+spec:
+  ports:
+    - port: 80
+      name: http
+  selector:
+    app: boostagram-consumer
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: boostagram-consumer
+  labels:
+    app: boostagram-consumer
+spec:
+  tls:
+  - hosts:
+      - boostagrams.beanteam.org
+    secretName: beanteam-tls
+  rules:
+  - host: boostagrams.beanteam.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: boostagram-consumer
+            port:
+              number: 80
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: boostagram-consumer-nginx-conf
+  labels:
+    app: boostagram-consumer
+data:
+  nginx.conf: |-
+    user nginx;
+    worker_processes 1;
+    events {
+      worker_connections 10240;
+    }
+    http {
+      server {
+        location / {
+            proxy_pass http://127.0.0.1:5000;
+        }
+        location = /robots.txt {
+          add_header Content-Type text/plain;
+          return 200 "User-agent: *\nDisallow: /\n";
+        }
+      }
+    }
