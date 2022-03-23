@@ -20,6 +20,8 @@ spec:
           env:
             - name: "MIN_SATS"
               value: "50000"
+            - name: "BOT_USER_NAME"
+              value: "Hog Story BoostChain"
             - name: WEBHOOK_URL
               valueFrom:
                 secretKeyRef:
