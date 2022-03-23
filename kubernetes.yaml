@@ -18,6 +18,8 @@ spec:
         - name: boostagram-consumer
           image: localhost:32000/boostagram-consumer:latest
           env:
+            - name: "MIN_SATS"
+              value: "50000"
             - name: WEBHOOK_URL
               valueFrom:
                 secretKeyRef:

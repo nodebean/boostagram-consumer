@@ -9,6 +9,13 @@ WEBHOOK = os.environ['WEBHOOK_URL']
 
 KEY = os.environ['APP_KEY']
 
+MIN_SATS = int(os.environ['MIN_SATS'])
+
+def data_validator(raw_message):
+    if raw_message['value_msat'] < MIN_SATS:
+        return False
+    return True
+
 def format_message(raw_message):
     try:
         sender = raw_message['sender']
@@ -25,6 +32,8 @@ def format_message(raw_message):
 def satoshi_msg(path):
     if path == KEY:
         data = json.loads(request.data)
+        if data_validator(data) is False:
+            return ('', 204)
         message = format_message(data)
         webhook = Webhook.from_url(WEBHOOK, adapter=RequestsWebhookAdapter())
         webhook.send(message, username="Hog Story Boostagram")
