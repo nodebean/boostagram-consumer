@@ -2,15 +2,17 @@ from flask import Flask, request, json
 from discord import Webhook, RequestsWebhookAdapter
 import requests
 import os
+import logging
 
 application = Flask(__name__)
 
+gunicorn_logger = logging.getLogger('gunicorn.error')
+application.logger.handlers = gunicorn_logger.handlers
+application.logger.setLevel(gunicorn_logger.level)
+
 WEBHOOK = os.environ['WEBHOOK_URL']
-
 KEY = os.environ['APP_KEY']
-
 MIN_SATS = int(os.environ['MIN_SATS'])
-
 BOT_USER_NAME = os.environ['BOT_USER_NAME']
 
 def data_validator(raw_message):
@@ -36,6 +38,7 @@ def satoshi_msg(path):
         data = json.loads(request.data)
         if data_validator(data) is False:
             return ('', 204)
+        application.logger.info(data)
         message = format_message(data)
         webhook = Webhook.from_url(WEBHOOK, adapter=RequestsWebhookAdapter())
         webhook.send(message, username=BOT_USER_NAME)
