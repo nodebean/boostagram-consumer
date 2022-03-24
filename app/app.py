@@ -15,6 +15,13 @@ KEY = os.environ['APP_KEY']
 MIN_SATS = int(os.environ['MIN_SATS'])
 BOT_USER_NAME = os.environ['BOT_USER_NAME']
 
+def get_sat_value(sats):
+    cb_response = requests.get('https://api.coinbase.com/v2/prices/spot?currency=USD').json()
+    usd_price = float(cb_response['data']['amount'])
+    sat_value = usd_price / 100000000
+    sat_value = sats * sat_value 
+    return sat_value
+
 def data_validator(raw_message):
     if raw_message['value_msat'] < MIN_SATS:
         return False
@@ -27,7 +34,8 @@ def format_message(raw_message):
         sats = raw_message['value_msat']
         sats = int(sats) / 1000
         sats = round(sats)
-        formatted_message = f"{sender} sent a donation of {sats} sats with the message: {text}"
+        sats_value = get_sat_value(sats)
+        formatted_message = f"{sender} sent a donation of {sats} sats (~${sats_value:.2f}) with the message: {text}"
         return formatted_message
     except:
         return "Somebody donated some sats, but the details were lost in transit. Sorry."
